@@ -2,6 +2,7 @@
 	path = third/llhttp
 	url = https://github.com/nodejs/llhttp.git
 	branch = release
+	ignore = untracked
 [submodule "dep/simple-net-lib"]
 	path = dep/simple-net-lib
 	url = https://github.com/gszj2018/simple-net-lib.git
