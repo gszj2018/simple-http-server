@@ -7,3 +7,6 @@
 	path = dep/simple-net-lib
 	url = https://github.com/gszj2018/simple-net-lib.git
 	branch = v1
+[submodule "third/base64"]
+	path = third/base64
+	url = https://github.com/aklomp/base64.git

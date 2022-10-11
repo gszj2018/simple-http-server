@@ -1,8 +1,10 @@
 #include <cstring>
 #include <cstdlib>
+#include <utility>
 #include "http_server.hpp"
 #include "logger.hpp"
 #include "json.h"
+#include "libbase64.h"
 
 using namespace SHS1;
 using namespace SNL1;
@@ -11,6 +13,8 @@ struct StringResponse : public ResponseBody {
     std::string s;
 
     explicit StringResponse(const std::string &s) : s(s) {}
+
+    explicit StringResponse(std::string &&s) : s(std::move(s)) {}
 
     std::pair<std::unique_ptr<char[]>, size_t> get() override {
         if (!s.empty()) {
@@ -31,6 +35,11 @@ struct StringResponse : public ResponseBody {
 
 struct EchoHandler {
     Json::Value rd;
+    std::string bs;
+    bool hasBody;
+    base64_state b64s;
+
+    EchoHandler() : hasBody{}, b64s{} {}
 
     void operator()(HttpHeader *header, HttpData *body, std::unique_ptr<Response> &resp) {
         if (header) {
@@ -47,8 +56,25 @@ struct EchoHandler {
                     header->result = HeaderAction::CLOSE;
                 }
             }
+            hasBody = false;
+            bs = "";
         } else if (body) {
+            if (!hasBody) {
+                hasBody = true;
+                base64_stream_encode_init(&b64s, 0);
+            }
+            size_t len, old = bs.size();
+            bs.resize(old + (body->length * 4 / 3 + 4));
+            base64_stream_encode(&b64s, body->data, body->length, bs.data() + old, &len);
+            bs.resize(old + len);
         } else {
+            if (hasBody) {
+                size_t len, old = bs.size();
+                bs.resize(old + 4);
+                base64_stream_encode_final(&b64s, bs.data() + old, &len);
+                bs.resize(old + len);
+                rd["body"] = bs;
+            }
             resp = std::make_unique<Response>();
             resp->version = "1.1";
             resp->status = 200;
