@@ -13,7 +13,7 @@ include_directories(third/llhttp/include)
 include_directories(dep/simple-net-lib/include)
 
 set(LIB_SRC
-        src/http_server.cpp
+        src/http_server.cpp src/http_server.hpp
         )
 
 set(APP_SRC
