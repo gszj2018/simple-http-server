@@ -4,12 +4,13 @@ project(simple_http_server)
 set(CMAKE_CXX_STANDARD 20)
 
 
-option(BUILD_SHARED_LIBS "" OFF)
-option(BUILD_STATIC_LIBS "" ON)
+option(BUILD_SHARED_LIBS "use shared libs" OFF)
+option(BUILD_STATIC_LIBS "use static libs" ON)
 add_subdirectory(third/llhttp)
 add_subdirectory(dep/simple-net-lib)
 
 include_directories(third/llhttp/include)
+include_directories(third/jsoncpp/json)
 include_directories(dep/simple-net-lib/include)
 
 set(LIB_SRC
@@ -17,6 +18,7 @@ set(LIB_SRC
         )
 
 set(APP_SRC
+        third/jsoncpp/jsoncpp.cpp
         src/main.cpp
         )
 
