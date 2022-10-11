@@ -172,7 +172,7 @@ private:
                     }
                 } while (n == bs_);
             }
-            if (conn_->hIsReadClosed() && !finish_ && !skip_) {
+            if ((conn_->hIsReadClosed() || !keepalive_) && !finish_ && !skip_) {
                 finish_ = true;
                 llhttp_errno_t err;
                 if ((err = llhttp_finish(&parser_)) != HPE_OK) {
@@ -184,7 +184,7 @@ private:
 
         conn_->hSetWrite(!resp_.empty());
         conn_->hSetRead(resp_.empty() && !skip_);
-        if (skip_) {
+        if (skip_ || finish_) {
             conn_->hShutdown(true, false);
         }
         if (httpError || conn_->hIsWriteClosed() || (conn_->hIsReadClosed() && resp_.empty())) {
