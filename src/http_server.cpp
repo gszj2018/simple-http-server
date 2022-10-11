@@ -241,7 +241,7 @@ private:
         o->requestHandler_(&header, nullptr, response);
         if (header.result == HeaderAction::SKIP_BODY) {
             if (!response)return -1;
-            o->resp_.emplace(std::move(response));
+            o->resp_.push(std::make_unique<PendingResponse>(std::move(response)));
             o->skip_ = true;
         }
         return header.result == HeaderAction::CLOSE ? -1 : 0;
@@ -262,7 +262,7 @@ private:
         o->keepalive_ = llhttp_should_keep_alive(parser);
         o->requestHandler_(nullptr, nullptr, response);
         if (response) {
-            o->resp_.emplace(response);
+            o->resp_.push(std::make_unique<PendingResponse>(std::move(response)));
             return 0;
         }
         // no response means to forcibly close connection
