@@ -11,20 +11,14 @@ using namespace SNL1;
 
 struct StringResponse : public ResponseBody {
     std::string s;
+    bool consumed;
 
-    explicit StringResponse(const std::string &s) : s(s) {}
+    explicit StringResponse(std::string s) : s(std::move(s)), consumed{false} {}
 
-    explicit StringResponse(std::string &&s) : s(std::move(s)) {}
-
-    std::pair<std::unique_ptr<char[]>, size_t> get() override {
-        if (!s.empty()) {
-            size_t n = s.size();
-            std::unique_ptr<char[]> b = std::make_unique<char[]>(n);
-            memcpy(b.get(), s.data(), n);
-            s = {};
-            return {std::move(b), n};
-        }
-        return {nullptr, 0};
+    std::pair<const char *, size_t> get() override {
+        if (consumed)return {nullptr, 0};
+        consumed = true;
+        return {s.data(), s.size()};
     }
 
     ssize_t len() override {
@@ -39,7 +33,7 @@ struct EchoHandler {
     bool hasBody;
     base64_state b64s;
 
-    EchoHandler() : hasBody{}, b64s{} {}
+    EchoHandler() : rd{}, bs{}, hasBody{}, b64s{} {}
 
     void operator()(HttpHeader *header, HttpData *body, std::unique_ptr<Response> &resp) {
         if (header) {

@@ -60,7 +60,7 @@ public:
 
     // returning nullptr indicate EOF
     // returning char[0] DOES NOT indicate EOF
-    virtual std::pair<std::unique_ptr<char[]>, size_t> get() = 0;
+    virtual std::pair<const char *, size_t> get() = 0;
 
     virtual ssize_t len() = 0;
 

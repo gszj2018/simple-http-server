@@ -25,7 +25,12 @@ set(APP_SRC
         )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
 
 add_executable(simple_http_server ${LIB_SRC} ${APP_SRC})
 
 target_link_libraries(simple_http_server llhttp_static simple_net_lib base64)
+
+message("DEFAULT FLAGS: ${CMAKE_CXX_FLAGS}")
+message("DEBUG   FLAGS: ${CMAKE_CXX_FLAGS_DEBUG}")
+message("RELEASE FLAGS: ${CMAKE_CXX_FLAGS_RELEASE}")

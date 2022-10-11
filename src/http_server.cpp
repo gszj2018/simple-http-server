@@ -23,13 +23,13 @@ struct PendingResponse {
     std::unique_ptr<Response> resp;
     ResponseState state;
     std::string hs;
-    std::unique_ptr<char[]> buf;
+    const char *buf;
     size_t cur, size;
 
     explicit PendingResponse(std::unique_ptr<Response> resp) :
             resp(std::move(resp)),
             state(ResponseState::NEW),
-            hs{}, buf{},
+            hs{}, buf{nullptr},
             cur(0), size(0) {}
 };
 
@@ -117,7 +117,7 @@ private:
                             } else {
                                 auto [p, s] = r->resp->body->get();
                                 r->size = s;
-                                r->buf = std::move(p);
+                                r->buf = p;
                             }
                             r->state = ResponseState::BODY;
                         } else break;
@@ -132,13 +132,13 @@ private:
                 case ResponseState::BODY:
                     if (!(e & EVENT_OUT)) break;
                     while (r->buf) {
-                        n = conn_->hWrite(r->buf.get() + r->cur, r->size - r->cur, ec);
+                        n = conn_->hWrite(r->buf + r->cur, r->size - r->cur, ec);
                         if (n > 0) {
                             if ((r->cur += n) == r->size) {
                                 auto [p, s] = r->resp->body->get();
                                 r->cur = 0;
                                 r->size = s;
-                                r->buf = std::move(p);
+                                r->buf = p;
                             } else break;
                         } else {
                             if (ec) {
