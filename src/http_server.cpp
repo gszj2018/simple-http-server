@@ -6,6 +6,9 @@
 #include <unordered_map>
 #include <queue>
 #include <cstring>
+#include <thread>
+#include <chrono>
+#include <vector>
 
 namespace SHS1 {
 
@@ -39,13 +42,14 @@ HttpHeader::HttpHeader(const std::string &method, const std::string &target, con
         method(method), target(target), version(version), header(header),
         result(HeaderAction::OK) {}
 
+constexpr size_t READ_BUFFER_SIZE = 10 * 1024 * 1024;
+thread_local std::vector<char> recvBuffer(READ_BUFFER_SIZE);
 
 class HttpStreamImpl final : public std::enable_shared_from_this<HttpStreamImpl> {
 public:
-    explicit HttpStreamImpl(std::shared_ptr<Connection> conn, size_t bufSize) :
+    explicit HttpStreamImpl(std::shared_ptr<Connection> conn) :
             parser_{}, settings_{},
             finish_(false), skip_(false), keepalive_(true),
-            b_(std::make_unique<char[]>(bufSize)), bs_(bufSize),
             conn_(std::move(conn)) {
         settings_.on_message_begin = onMessageBegin;
         settings_.on_method = onMethod;
@@ -72,8 +76,6 @@ private:
     llhttp_settings_t settings_;
     std::string chf_;
     bool finish_, skip_, keepalive_;
-    std::unique_ptr<char[]> b_;
-    size_t bs_;
     std::shared_ptr<Connection> conn_;
     RequestHandler requestHandler_;
 
@@ -157,10 +159,10 @@ private:
                 int ec;
                 size_t n;
                 do {
-                    n = conn_->hRead(b_.get(), bs_, ec);
+                    n = conn_->hRead(recvBuffer.data(), READ_BUFFER_SIZE, ec);
                     if (n > 0) {
                         llhttp_errno_t err;
-                        if ((err = llhttp_execute(&parser_, b_.get(), n)) != HPE_OK) {
+                        if ((err = llhttp_execute(&parser_, recvBuffer.data(), n)) != HPE_OK) {
                             Logger::global->log(LOG_WARN, std::string("http err: ") + llhttp_errno_name(err));
                             httpError = true;
                         }
@@ -170,7 +172,7 @@ private:
                             conn_->hShutdown(true, true);
                         }
                     }
-                } while (n == bs_);
+                } while (n > 0);
             }
             if ((conn_->hIsReadClosed() || !keepalive_) && !finish_ && !skip_) {
                 finish_ = true;
@@ -271,19 +273,13 @@ private:
 };
 
 
-HttpServer::HttpServer(std::shared_ptr<Listener> lis) :
-        listener_(std::move(lis)),
-        rbs_(DEFAULT_READ_BUFFER_SIZE) {}
+HttpServer::HttpServer(std::shared_ptr<Listener> lis) : listener_(std::move(lis)) {}
 
 void HttpServer::enableHandler(NewClientHandler h) {
     newClientHandler_ = std::move(h);
     listener_->enableHandler([ptr = shared_from_this()](EventType e) {
         ptr->acceptHandler_(e);
     });
-}
-
-void HttpServer::configureReadBufferSize(size_t s) {
-    rbs_ = s;
 }
 
 void HttpServer::stop() {
@@ -296,14 +292,12 @@ void HttpServer::acceptHandler_(EventType e) {
             int ec;
             std::shared_ptr<Connection> c = listener_->hAccept(ec);
             if (c) {
-                std::shared_ptr<HttpStreamImpl> hs = std::make_shared<HttpStreamImpl>(std::move(c), rbs_);
+                std::shared_ptr<HttpStreamImpl> hs = std::make_shared<HttpStreamImpl>(std::move(c));
                 hs->enableHandler(newClientHandler_());
             } else {
                 if (ec) {
                     Logger::global->log(LOG_WARN, strerror(ec));
-                    if (ec == ENFILE || ec == EMFILE) {
-                        listener_->hShutdown();
-                    }
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
                 }
                 break;
             }

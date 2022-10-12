@@ -90,11 +90,7 @@ using NewClientHandler = std::function<RequestHandler()>;
 
 class HttpServer final : public std::enable_shared_from_this<HttpServer> {
 public:
-    static constexpr size_t DEFAULT_READ_BUFFER_SIZE = 1048576;
-
     void enableHandler(NewClientHandler h);
-
-    void configureReadBufferSize(size_t s);
 
     void stop();
 
@@ -103,7 +99,6 @@ public:
 private:
     std::shared_ptr<Listener> listener_;
     NewClientHandler newClientHandler_;
-    size_t rbs_;
 
     explicit HttpServer(std::shared_ptr<Listener> lis);
 
