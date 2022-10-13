@@ -58,8 +58,9 @@ struct HttpData {
 class ResponseBody {
 public:
 
-    // returning nullptr indicate EOF
-    // returning char[0] DOES NOT indicate EOF
+    // returning nullptr as buffer pointer indicate EOF
+    // NOTE: currently we don't support non-blocking streaming of real-time generated body,
+    //       do not return 0-sized buffer
     virtual std::pair<const char *, size_t> get() = 0;
 
     virtual ssize_t len() = 0;

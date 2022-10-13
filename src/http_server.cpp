@@ -97,7 +97,11 @@ private:
                     r->hs.append("Connection: ").append(keepalive_ ? "keep-alive" : "close").append("\r\n");
                     if (r->resp->body) {
                         size_t len = r->resp->body->len();
-                        r->hs.append("Content-Length: ").append(std::to_string(len)).append("\r\n");
+                        if (len > 0) {
+                            r->hs.append("Content-Length: ").append(std::to_string(len)).append("\r\n");
+                        } else {
+                            r->resp->body.reset();
+                        }
                     }
                     for (auto &&[k, v]: r->resp->header) {
                         r->hs.append(k).append(": ").append(v).append("\r\n");
@@ -113,7 +117,7 @@ private:
                     if (n > 0) {
                         if ((r->cur += n) == r->size) {
                             r->cur = 0;
-                            if (method_ == "HEAD") {
+                            if (method_ == "HEAD" || !r->resp->body) {
                                 r->size = 0;
                                 r->buf = nullptr;
                             } else {
@@ -135,7 +139,7 @@ private:
                     if (!(e & EVENT_OUT)) break;
                     while (r->buf) {
                         n = conn_->hWrite(r->buf + r->cur, r->size - r->cur, ec);
-                        if (n > 0) {
+                        if (n > 0 || (r->size == r->cur && !ec)) {
                             if ((r->cur += n) == r->size) {
                                 auto [p, s] = r->resp->body->get();
                                 r->cur = 0;
