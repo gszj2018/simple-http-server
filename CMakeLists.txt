@@ -4,6 +4,8 @@ project(simple_http_server)
 set(CMAKE_CXX_STANDARD 20)
 
 
+OPTION(OPT_ENABLE_NATIVE "optimize for local architecture" ON)
+OPTION(OPT_ENABLE_LTO "enable link-time optimization" ON)
 option(BUILD_SHARED_LIBS "use shared libs" OFF)
 option(BUILD_STATIC_LIBS "use static libs" ON)
 add_subdirectory(third/llhttp)
@@ -25,13 +27,19 @@ set(APP_SRC
         )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+if (OPT_ENABLE_NATIVE)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
+endif ()
+if (OPT_ENABLE_LTO)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif ()
 
 add_executable(simple_http_server ${LIB_SRC} ${APP_SRC})
 
 target_link_libraries(simple_http_server llhttp_static simple_net_lib base64)
 
+message("===simple-http-server===")
 message("DEFAULT FLAGS: ${CMAKE_CXX_FLAGS}")
 message("DEBUG   FLAGS: ${CMAKE_CXX_FLAGS_DEBUG}")
 message("RELEASE FLAGS: ${CMAKE_CXX_FLAGS_RELEASE}")
+message("LTO: ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
