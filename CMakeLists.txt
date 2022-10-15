@@ -26,6 +26,7 @@ set(APP_SRC
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 add_executable(simple_http_server ${LIB_SRC} ${APP_SRC})
 
