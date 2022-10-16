@@ -88,7 +88,7 @@ int main() {
     Context::blockIntSignal();
 
     Context ctx(8, 65536, 65536);
-    std::shared_ptr<Listener> listener = ctx.newTcpServer(port, 128, ec);
+    std::shared_ptr<Listener> listener = ctx.newTcpServer(port, 4096, ec);
     if (!listener) {
         panic(strerror(ec));
     }
