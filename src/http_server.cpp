@@ -45,7 +45,8 @@ HttpHeader::HttpHeader(const std::string &method, const std::string &target, con
 constexpr size_t READ_BUFFER_SIZE = 10 * 1024 * 1024;
 thread_local std::vector<char> recvBuffer(READ_BUFFER_SIZE);
 
-class HttpStreamImpl final : public std::enable_shared_from_this<HttpStreamImpl> {
+class HttpStreamImpl final : private DisableCopy,
+                             public std::enable_shared_from_this<HttpStreamImpl> {
 public:
     explicit HttpStreamImpl(std::shared_ptr<Connection> conn) :
             parser_{}, settings_{},

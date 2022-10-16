@@ -17,6 +17,7 @@ using SNL1::CtxObject;
 using SNL1::Context;
 using SNL1::Listener;
 using SNL1::EventType;
+using SNL1::DisableCopy;
 }
 
 enum class HeaderAction {
@@ -89,7 +90,8 @@ using RequestHandler = std::function<void(HttpHeader *, HttpData *, std::unique_
 
 using NewClientHandler = std::function<RequestHandler()>;
 
-class HttpServer final : public std::enable_shared_from_this<HttpServer> {
+class HttpServer final : private DisableCopy,
+                         public std::enable_shared_from_this<HttpServer> {
 public:
     void enableHandler(NewClientHandler h);
 
